@@ -120,3 +120,7 @@ func (self *Box) String() string {
 	b, _ := json.Marshal(self.items)
 	return string(b)
 }
+
+func (self *Box) MarshalJSON() ([]byte, error) {
+	return json.Marshal(self.items)
+}
