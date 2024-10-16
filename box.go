@@ -76,6 +76,12 @@ func (self *Box) Fork() *Box {
 	return box
 }
 
+func (self *Box) Merge(box *Box) {
+	self.mu.Lock()
+	defer self.mu.Unlock()
+	maps.Copy(self.items, box.items)
+}
+
 func (self *Box) Inject(handler any) (func(), error) {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
