@@ -44,7 +44,6 @@ func (self *Box) Put(values ...any) {
 func (self *Box) PutByKey(key string, value any) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
-
 	self.items[key] = value
 }
 
@@ -82,7 +81,7 @@ func (self *Box) Merge(box *Box) {
 	maps.Copy(self.items, box.items)
 }
 
-func (self *Box) Inject(handler any) (func(), error) {
+func (self *Box) Inject(handler any) (func() (any, error), error) {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
 
@@ -98,7 +97,7 @@ func (self *Box) Inject(handler any) (func(), error) {
 		return nil, errors.New("handler must be a function")
 	}
 
-	args := make([]reflect.Value, t.NumIn())
+	in := make([]reflect.Value, t.NumIn())
 
 	for i := 0; i < t.NumIn(); i++ {
 		paramType := t.In(i)
@@ -111,18 +110,34 @@ func (self *Box) Inject(handler any) (func(), error) {
 			)
 		}
 
-		args[i] = reflect.ValueOf(item)
+		in[i] = reflect.ValueOf(item)
 	}
 
-	return func() {
-		value.Call(args)
+	return func() (any, error) {
+		ret := value.Call(in)
+
+		if len(ret) == 0 {
+			return nil, nil
+		}
+
+		if len(ret) == 1 {
+			return ret[0].Interface(), nil
+		}
+
+		if len(ret) == 2 {
+			return ret[0].Interface(), ret[1].Interface().(error)
+		}
+
+		return nil, fmt.Errorf(
+			"expected function to return at most 2 values, received %d",
+			len(ret),
+		)
 	}, nil
 }
 
 func (self *Box) String() string {
 	self.mu.RLock()
 	defer self.mu.RUnlock()
-
 	b, _ := json.Marshal(self.items)
 	return string(b)
 }
