@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
 	"maps"
 	"reflect"
 	"sync"
@@ -45,6 +46,45 @@ func (self *Box) PutByKey(key string, value any) {
 	self.mu.Lock()
 	defer self.mu.Unlock()
 	self.items[key] = value
+}
+
+func (self *Box) Keys() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		self.mu.RLock()
+		defer self.mu.RUnlock()
+
+		for key := range self.items {
+			if !yield(key) {
+				return
+			}
+		}
+	}
+}
+
+func (self *Box) Values() iter.Seq[any] {
+	return func(yield func(any) bool) {
+		self.mu.RLock()
+		defer self.mu.RUnlock()
+
+		for _, value := range self.items {
+			if !yield(value) {
+				return
+			}
+		}
+	}
+}
+
+func (self *Box) Items() iter.Seq2[string, any] {
+	return func(yield func(string, any) bool) {
+		self.mu.RLock()
+		defer self.mu.RUnlock()
+
+		for key, value := range self.items {
+			if !yield(key, value) {
+				return
+			}
+		}
+	}
 }
 
 func (self *Box) Deadline() (deadline time.Time, ok bool) {
