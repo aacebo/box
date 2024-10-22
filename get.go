@@ -11,8 +11,22 @@ func Get[T any](box *Box) T {
 	return value.(T)
 }
 
-func GetByKey[T any](box *Box, key string) T {
+func GetPath[T any](box *Box, path ...string) T {
 	box.mu.RLock()
 	defer box.mu.RUnlock()
-	return box.items[key].(T)
+
+	var value any = box
+
+	for _, key := range path {
+		switch v := value.(type) {
+		case Box:
+			value = v.items[key]
+		case *Box:
+			value = v.items[key]
+		default:
+			break
+		}
+	}
+
+	return value.(T)
 }

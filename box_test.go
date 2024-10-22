@@ -108,9 +108,22 @@ func TestBox(t *testing.T) {
 		b := box.New()
 		b.PutByKey("test", &A{"world"})
 
-		a := box.GetByKey[*A](b, "test")
+		a := box.GetPath[*A](b, "test")
 
 		if a == nil {
+			t.Fatalf("expected singleton value")
+		}
+	})
+
+	t.Run("should get value by path", func(t *testing.T) {
+		b := box.New()
+		a := box.New()
+		a.PutByKey("hello", &A{Hello: "world"})
+		b.PutByKey("test", a)
+
+		c := box.GetPath[*A](b, "test", "hello")
+
+		if c == nil {
 			t.Fatalf("expected singleton value")
 		}
 	})
